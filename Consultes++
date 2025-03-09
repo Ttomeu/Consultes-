@@ -1,0 +1,167 @@
+-- 1 Mostra el nom complet del client, la data del lloguer i el títol de la pel·lícula llogada.
+select concat_ws(' ',c.first_name,c.last_name), r.rental_date, fil.title from customer c 
+Join rental r on r.customer_id = c.customer_id
+Join inventory inv on inv.inventory_id = r.inventory_id
+join film fil on fil.film_id = inv.film_id;
+
+-- 2 Mostra el títol de la pel·lícula, la descripció i el nom de la categoria a la qual pertany.
+Select fil.title, fil.description, cate.name from film fil 
+join film_category filc on filc.film_id = fil.film_id
+join category cate on cate.category_id = filc.category_id;
+-- 3 Mostra el nom de la ciutat on resideixen els clients que actualment estan actius.
+SELECT * FROM STAFF;
+Select ci.city, st.active FROM city ci
+join address ad on ad.city_id = ci.city_id
+join staff st on st.address_id = ad.address_id
+Where st.active = 1;
+
+-- 4 Mostra el nom de la categoria, el títol de la pel·lícula i la seva descripció. Inclou també les categories que no tenen cap pel·lícula associada.
+select * from film;
+Select cate.name, f.title, f.description FROM category cate
+left join film_category fc on fc.category_id = cate.category_id
+left join film f on f.film_id = fc.film_id;
+-- 5 Mostra el títol de la pel·lícula i el seu preu de lloguer, però només de les pel·lícules que tenen un preu superior al preu mitjà de totes les pel·lícules. 
+Select * from film;
+SELECT title, rental_rate FROM film WHERE rental_rate > (SELECT AVG(rental_rate) FROM film);
+-- 6 Mostra el nom complet del client, la data del lloguer i l’identificador de la pel·lícula llogada. Inclou també els clients que encara no han fet cap lloguer. 
+Select concat_ws(' ', c.first_name, c.last_name) as 'nom_complet', r.rental_date, inv.film_id FROM customer c
+left join rental r on r.customer_id = c.customer_id
+left join inventory inv on inv.inventory_id = r.inventory_id
+;
+-- 7 Mostra el nom complet dels clients i el seu correu electrònic, ordenats alfabèticament pel nom en majúscules. Limita el resultat als primers 10 clients.
+Select upper(concat_ws(' ', first_name, last_name)) as 'nom_complet', email FROM customer limit 10;
+-- 8 Mostra el nom de la categoria i la durada mitjana de les pel·lícules que pertanyen a aquesta categoria. 
+Select  avg(fil.length), c.NAME FROM film fil
+join film_category filc on filc.film_id = fil.film_id
+join category c on c.category_id = filc.category_id
+group by c.name;
+-- 9 Mostra el títol de la pel·lícula, el preu del lloguer i el cost per minut, arrodonit a dues decimals.
+Select * from film;
+Select title, rental_rate, round(rental_rate / length, 2) as 'cost/minut' FROM film;
+-- 10 Mostra titol i preu del lloguer de totes les pel·licules que tenen el preu de lloguer més gran
+SELECT f.title AS titol, f.rental_rate AS preu_lloguer
+FROM film f
+WHERE f.rental_rate = (SELECT MAX(rental_rate) FROM film);
+
+-- 11 Mostra el nom de la ciutat on resideixen els clients de la base de dades.
+Select concat_ws(' ', cu.first_name, cu.last_name) as 'nom_complet', ci.city From customer cu
+join address ad on ad.address_id = cu.address_id
+join city ci on ci.city_id = ad.city_id
+group by cu.customer_id;
+
+-- 12 Mostra el títol de les pel·lícules que tenen una durada superior a la durada mitjana de totes les pel·licules.
+Select * FROM film;
+Select title, rental_duration, film_id FROM film 
+group by film_id
+having rental_duration > (Select avg(rental_duration) FROM film);
+
+--  13 Mostra el nom complet dels clients que han gastat més en lloguers que la despesa total mitjana de tots els clients.
+Select c.customer_id,concat_ws(' ', c.first_name, c.last_name) as 'Nom complet', sum(p.amount) as 'Total' 
+from customer c 
+join payment p on p.customer_id = c.customer_id
+group by customer_id 
+having sum(p.amount)> (Select  avg(amount)
+from payment 
+);
+
+--  14 Mostra el nom complet dels clients, l'identificador del lloguer
+--  i l'import total del lloguer 
+-- després d'aplicar un descompte del 10%. 
+-- Inclou també aquells clients que no han realitzat cap lloguer.
+Select concat_ws(' ', c.first_name, c.last_name) as 'Nom complet', r.rental_id, p.amount * 0.9 
+FROm customer c
+left join rental r on r.customer_id = c.customer_id
+left join payment p on p.rental_id = r.rental_id
+;
+select * from payment;
+
+-- 15 Mostra el nom de la categoria, el títol de la pel·lícula i la seva durada,
+-- però només de la pel·lícula més llarga de cada categoria.
+select f.title, c.name, c.category_id, f.length FROM film f
+join film_category fc on fc.film_id = f.film_id
+join category c on c.category_id = fc.category_id
+Where f.length = (select  max(f.length) FROM film f
+join film_category fc on fc.film_id = f.film_id
+join category c on c.category_id = fc.category_id)
+order by c.name;
+
+--  16 Mostra el títol de la pel·lícula i la seva durada expressada en hores i minuts 
+-- en dues columnes diferents. Inclou també aquelles pel·lícules que no tenen una durada
+-- especificada.
+Select * FROM film;
+SELECT 
+    title AS titol_pelicula,
+    length / 60 AS hores,
+    length % 60 AS minuts,
+    coalesce(length, 0)
+FROM film;
+
+ Select * From rental;
+-- 17 Mostra el nom complet dels clients que han realitzat més lloguers que la mitjana de lloguers per client.
+Select concat_ws(' ', c.first_name, c.last_name) as 'Nom complet', c.customer_id,  count(r.rental_id) FRom customer c
+join rental r on r.customer_id = c.customer_id 
+group by c.customer_id 
+having count(r.rental_id) > (Select avg(r.rental_id)FRom customer c 
+join rental r on r.customer_id = c.customer_id
+);
+
+-- 18 Mostra el nom de la categoria de totes les pel·lícules disponibles per al lloguer. 
+-- Disponible per llogar són totes aquelles que tots els seus lloguers tenen `return_date`
+-- informat (NOT NULL) o que no es troben a la taula rental (no han estat llogades mai).
+SELECT DISTINCT cat.name AS nom_categoria
+FROM category cat
+JOIN film_category fc ON cat.category_id = fc.category_id
+JOIN film f ON fc.film_id = f.film_id
+JOIN inventory i ON f.film_id = i.film_id
+LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+GROUP BY cat.name;
+
+
+--  19 Mostra tots els països on no hi tenguem clients.
+Select concat_ws(' ', cu.first_name, cu.last_name), co.country FROm country co 
+left join city ci on ci.country_id = co.country_id
+left Join address ad on ad.city_id = ci.city_id
+left join customer cu on cu.address_id = ad.address_id
+Where customer_id is null;
+select * from rental;
+-- 20 Mostra el nom complet del client,
+--  la data del lloguer i el nombre de dies que han passat des del lloguer fins avui.
+Select concat_ws(' ', c.first_name, c.last_name), datediff(CURDATE(), max(r.rental_date))  FRom customer c 
+join rental r on r.customer_id = c.customer_id 
+group by c.customer_id;
+Select * From staff;
+-- 21 Mostra una llista única que inclogui tant els noms complets dels clients com els noms complets dels empleats que viuen a Canadà.
+-- Afegeix una columna que indiqui si és client o empleat.
+Select  concat_ws(' ', c.first_name, c.last_name),co.country, c.active From customer c 
+Join address ad on ad.address_id = c.address_id
+join city ci on ci.city_id = ad.city_id
+join country co on co.country_id = ci.country_id
+Where co.country = "Canada"  ; 
+
+ 
+
+-- 22 Mostra el nom complet del client i el nombre total de lloguers que ha realitzat.
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS nom_complet, COUNT(r.rental_id) AS 'nombre_lloguers'
+FROM customer c
+JOIN rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id;
+
+--  23 Mostra una llista de ciutats on hi hagi almenys un client o un proveïdor.
+SELECT ci.city FROM city ci
+LEFT JOIN address USING (city_id)
+LEFT JOIN customer cu USING (address_id)
+LEFT JOIN staff st USING (address_id)
+WHERE cu.customer_id IS NOT NULL OR st.staff_id IS NOT NULL ; 
+
+--  24 De cada client, mostra el seu nom complet, la data del seu primer lloguer i la data del seu últim lloguer.
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS nom_complet,  MIN(r.rental_date) AS primer_lloguer, MAX(r.rental_date) AS ultim_lloguer
+FROM customer c
+JOIN rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id;
+
+--  25 Identifica els clients que no han realitzat cap lloguer en els darrers 30 dies i obtén el seu nom complet, adreça de correu electrònic i la data del seu últim lloguer.
+SELECT CONCAT(c.first_name, ' ', c.last_name) AS nom_complet, c.email AS adreca_correo, MAX(r.rental_date) AS ultim_lloguer
+FROM customer c
+LEFT JOIN rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name, c.email
+HAVING MAX(r.rental_date) < CURDATE() - INTERVAL 30 DAY OR MAX(r.rental_date) IS NULL;
